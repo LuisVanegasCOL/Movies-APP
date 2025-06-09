@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: movies-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-db_movies}
+      MYSQL_USER: ${MYSQL_USER:-user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-password}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./Backend/src/main/resources/db/migration:/docker-entrypoint-initdb.d
+    networks:
+      - movies-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    build: 
+      context: ./Backend
+      dockerfile: Dockerfile
+    container_name: movies-backend
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-db_movies}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-user}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-password}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      PORT: 8080
+    ports:
+      - "${PORT:-8080}:8080"
+    volumes:
+      - ./Backend:/app
+      - ~/.m2:/root/.m2
+    networks:
+      - movies-network
+
+  frontend:
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+    container_name: movies-frontend
+    depends_on:
+      - backend
+    environment:
+      - VITE_API_URL=${VITE_API_URL:-http://localhost:8080}
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    volumes:
+      - ./Frontend:/app
+      - /app/node_modules
+    networks:
+      - movies-network
+
+networks:
+  movies-network:
+    driver: bridge
+
+volumes:
+  mysql-data: 
