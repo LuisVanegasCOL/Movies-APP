@@ -1,13 +1,27 @@
 # Usar una imagen base con Docker y Docker Compose
-FROM docker:20.10.16
+FROM ubuntu:22.04
+
+# Evitar interacciones durante la instalación
+ENV DEBIAN_FRONTEND=noninteractive
 
 # Instalar dependencias necesarias
-RUN apk add --no-cache \
-    python3 \
-    py3-pip \
-    bash \
+RUN apt-get update && apt-get install -y \
+    apt-transport-https \
+    ca-certificates \
     curl \
-    git
+    gnupg \
+    lsb-release \
+    software-properties-common \
+    python3-pip \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Instalar Docker
+RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null \
+    && apt-get update \
+    && apt-get install -y docker-ce docker-ce-cli containerd.io \
+    && rm -rf /var/lib/apt/lists/*
 
 # Instalar Docker Compose
 RUN pip3 install docker-compose
@@ -23,6 +37,9 @@ RUN chmod +x start.sh
 
 # Exponer los puertos necesarios
 EXPOSE 8080 3000 3306
+
+# Comando para iniciar la aplicación
+CMD ["./start.sh"]
 
 # Etapa 1: Construir el Backend
 FROM maven:3.9-eclipse-temurin-17 AS backend-builder
