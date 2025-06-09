@@ -6,8 +6,7 @@ RUN apk add --no-cache \
     py3-pip \
     bash \
     git \
-    docker \
-    docker-cli
+    openjdk17-jre
 
 # Copiar los archivos del proyecto
 COPY . /app
