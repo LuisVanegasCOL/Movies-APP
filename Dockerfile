@@ -1,11 +1,13 @@
-FROM docker/compose:1.29.2
+FROM node:18-alpine
 
 # Instalar dependencias necesarias
 RUN apk add --no-cache \
     python3 \
     py3-pip \
     bash \
-    git
+    git \
+    docker \
+    docker-cli
 
 # Copiar los archivos del proyecto
 COPY . /app
@@ -17,4 +19,4 @@ WORKDIR /app
 EXPOSE 3000 8080
 
 # Comando para iniciar la aplicación
-CMD ["docker-compose", "up", "-d"] 
+CMD ["sh", "-c", "cd Backend && ./mvnw spring-boot:run & cd Frontend && npm install && npm run dev"] 

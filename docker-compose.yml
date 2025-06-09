@@ -13,14 +13,8 @@ services:
       - "3306:3306"
     volumes:
       - mysql-data:/var/lib/mysql
-      - ./Backend/src/main/resources/db/migration:/docker-entrypoint-initdb.d
     networks:
       - movies-network
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
-      interval: 5s
-      timeout: 5s
-      retries: 20
 
   backend:
     build: 
@@ -28,8 +22,7 @@ services:
       dockerfile: Dockerfile
     container_name: movies-backend
     depends_on:
-      mysql:
-        condition: service_healthy
+      - mysql
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-db_movies}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
       SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-root}
@@ -38,9 +31,6 @@ services:
       PORT: 8080
     ports:
       - "${PORT:-8080}:8080"
-    volumes:
-      - ./Backend:/app
-      - ~/.m2:/root/.m2
     networks:
       - movies-network
 
@@ -55,9 +45,6 @@ services:
       - VITE_API_URL=${VITE_API_URL:-http://localhost:8080}
     ports:
       - "${FRONTEND_PORT:-3000}:80"
-    volumes:
-      - ./Frontend:/app
-      - /app/node_modules
     networks:
       - movies-network
 
